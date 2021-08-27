@@ -9,8 +9,8 @@ pygame.display.init()
 Red=(255, 0, 0)
 width=int(1200)
 height=int(675)
-HitButton=pygame.image.load(r"C:\Users\spear\.pylint.d\blackjack\Hit Button.png")
-StandButton=pygame.image.load(r"C:\Users\spear\.pylint.d\blackjack\Stand Button.png")
+HitButton=pygame.image.load(r"Hit Button.png")
+StandButton=pygame.image.load(r"Stand Button.png")
 Button_width=HitButton.get_width()
 Button_height=HitButton.get_height()
 
@@ -28,7 +28,7 @@ max_height=675-card_height
 for suite in suites:
     for value in values:
         cardname=value+suite
-        cardDirect=r'C:\Users\spear\OneDrive\Desktop\Desktop Folder\CardPics\ '
+        cardDirect=r'CardPics\ '
         cardDirect = cardDirect[:-1]
         cardDirect += cardname
         cardDirect += ".png"
