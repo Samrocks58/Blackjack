@@ -1,4 +1,4 @@
-import pygame, socket, random, time, os
+import pygame, random, time, os
 from pygame.rect import Rect
 import tkinter as tk
 from tkinter import messagebox as mb, ttk, Tk
@@ -28,7 +28,7 @@ max_height=675-card_height
 for suite in suites:
     for value in values:
         cardname=value+suite
-        cardDirect=r'CardPics\ '
+        cardDirect=r'C:\Users\smprc\AppData\Local\Programs\Microsoft VS Code\coding files\CardPics\ '
         cardDirect = cardDirect[:-1]
         cardDirect += cardname
         cardDirect += ".png"
@@ -55,7 +55,7 @@ class deck:
     def __init__(self):
         self.cards=create_deck()
         self.end_pos=[7, 14]
-        self.image=pygame.image.load(r"C:\Users\spear\OneDrive\Desktop\New Face Down Card.jpg")
+        self.image=pygame.image.load(r"C:\Users\smprc\Downloads\Desktop Folder\New Face Down Card.jpg")
         self.image=pygame.transform.scale(self.image, (226, 314))
         self.center=[self.end_pos[0]+(card_width//2), self.end_pos[1]+(card_height//2)]
         self.Rect=self.image.get_rect(center=(self.center))
