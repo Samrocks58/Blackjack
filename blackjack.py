@@ -265,7 +265,6 @@ def create_card():
     if len(Deck.cards) <= 4:
         Deck.Restart()
         Deck.cards=create_deck()
-        print("yay")
         create_card()
         return True
     cardNum=len(Cards)
