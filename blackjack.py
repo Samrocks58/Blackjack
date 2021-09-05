@@ -137,7 +137,7 @@ msg1=""
 msg2=""
 
 def Restart():
-    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended
+    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck
     del Cards
     del OpponentCards
     OpponentCards={}
@@ -262,9 +262,10 @@ def end_popup(message1, message2):
 
 def create_card():
     global Deck
-    if len(Deck.cards) <= 3:
+    if len(Deck.cards) <= 4:
         Deck.Restart()
         Deck.cards=create_deck()
+        print("yay")
         create_card()
         return True
     cardNum=len(Cards)
