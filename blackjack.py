@@ -11,6 +11,7 @@ width=int(1200)
 height=int(675)
 HitButton=pygame.image.load(r"Hit Button.png")
 StandButton=pygame.image.load(r"Stand Button.png")
+SplitButton=pygame.image.load(r"splitButton.png")
 Button_width=HitButton.get_width()
 Button_height=HitButton.get_height()
 
@@ -44,6 +45,7 @@ screen = pygame.display.set_mode((width, height))
 screen.fill(poker_green)
 GlobMoving=False
 GlobSplitting=False
+sameCard=False
 
 def create_deck():
     func_list=[]
@@ -312,7 +314,7 @@ def find_average(list):
     return sum//len(list)
 
 def gameloop():
-    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting 
+    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard 
     while True:
         # end_time=time.perf_counter()
         # FPSlist.append(int((end_time-start_time)**-1))
@@ -327,13 +329,18 @@ def gameloop():
             Card(2, True)
         elif round == 200:
             OpponentCard(2, True)
+            if Cards[list(Cards.keys())[0]].card[0] == Cards[list(Cards.keys())[1]].card[0]:
+                sameCard=True
         if round <= 200:
             round += 1
+
         pygame.display.flip()
         screen.fill(poker_green)
-        screen.blit(Deck.image, Deck.end_pos)
+        screen.blit(Deck.image, Deck.end_pos)        
         screen.blit(HitButton, (Deck.Rect.right+5, Deck.Rect.top))
         screen.blit(StandButton, (Deck.Rect.right+5, Deck.Rect.top+75))
+        if sameCard:
+            screen.blit(SplitButton, (Deck.Rect.right+5, Deck.Rect.top+150))
 
         if Standed:
             Opponent_Show()
