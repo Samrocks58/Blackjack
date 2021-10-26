@@ -43,6 +43,7 @@ Black=(255, 255, 255)
 screen = pygame.display.set_mode((width, height))
 screen.fill(poker_green)
 GlobMoving=False
+GlobSplitting=False
 
 def create_deck():
     func_list=[]
@@ -68,6 +69,13 @@ class deck:
         cardObject.MoveY=differenceY
         cardObject.moving=True
         GlobMoving=True
+    def split_card(self, cardObject):
+        global GlobSplitting
+        differenceX=cardObject.end_pos[0]//70
+        cardObject.MoveX=differenceX
+        cardObject.moving=True
+        cardObject.active_pos=cardObject.end_pos
+        GlobSplitting=True
     def Restart(self):
         self.cards=create_deck()
 
@@ -304,7 +312,7 @@ def find_average(list):
     return sum//len(list)
 
 def gameloop():
-    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended 
+    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting 
     while True:
         # end_time=time.perf_counter()
         # FPSlist.append(int((end_time-start_time)**-1))
@@ -353,7 +361,13 @@ def gameloop():
             if not Cards[i].starting:
                 cardpos=Cards[i].active_pos
             elif Cards[i].starting:
-                cardpos=Cards[i].end_pos
+                if not GlobSplitting:
+                    cardpos=Cards[i].end_pos
+                elif GlobSplitting:
+                    if Cards[i].id == 2:
+                        cardpos=Cards[i].active_pos
+                    else:
+                        cardpos=Cards[i].end_pos
             if Cards[i].showed:
                 screen.blit(Cards[i].image, cardpos)
             elif Cards[i].showed == False:
@@ -383,7 +397,16 @@ def gameloop():
                     else:
                         Cards[i].active_pos[0] += Cards[i].MoveX
                         Cards[i].active_pos[1] += Cards[i].MoveY
-
+        if GlobSplitting:
+            for i in Cards:
+                if Cards[i].moving:
+                    if Cards[i].active_pos[0] <= 14:
+                        Cards[i].active_pos[0] = 14
+                        Cards[i].end_pos[0] = 14
+                        GlobSplitting=False
+                        Cards[i].moving=False
+                    else:
+                        Cards[i].active_pos[0] -= Cards[i].MoveX
         for event in pygame.event.get():
             if not GlobMoving:
                 if round > 200:
@@ -398,6 +421,8 @@ def gameloop():
             if event.type == pygame.KEYDOWN: 
                 if event.key == pygame.K_q:
                     quit()
+                if event.key == pygame.K_s:
+                    Deck.split_card(Cards[list(Cards.keys())[1]])
             if event.type == pygame.QUIT:
                 quit()
 gameloop()
