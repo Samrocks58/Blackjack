@@ -93,6 +93,12 @@ class Card(Rect):
         new_card = Deck.cards[randCardInt]
         Deck.cards.remove(new_card)
         self.card=new_card
+        # if id > 2:
+        #     self.card=new_card
+        # if id == 1:
+        #     self.card = "0H"
+        # if id == 2:
+        #     self.card = "0S"
         self.starting=startingcard
         self.MoveX=0
         self.MoveY=0
@@ -147,7 +153,7 @@ msg1=""
 msg2=""
 
 def Restart():
-    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck
+    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck, sameCard
     del Cards
     del OpponentCards
     OpponentCards={}
@@ -160,6 +166,7 @@ def Restart():
     old_round=0
     Standed=False
     ended=False
+    sameCard=False
     msg1=""
     msg2=""
     gameloop()
