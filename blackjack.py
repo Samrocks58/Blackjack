@@ -302,6 +302,7 @@ gameover=False
 gameoverCounter=0
 HitButtonRect=HitButton.get_rect(center=(Deck.Rect.right+5+Button_width//2, Deck.Rect.top+Button_height//2))
 StandButtonRect=StandButton.get_rect(center=(Deck.Rect.right+5+Button_width//2, Deck.Rect.top+75+Button_height//2))
+SplitButtonRect=SplitButton.get_rect(center=(Deck.Rect.right+5+Button_width//2, Deck.Rect.top+150+Button_height//2))
 round=0
 Standed=False
 ended=False
@@ -425,11 +426,11 @@ def gameloop():
                             if StandButtonRect.collidepoint(mousepos):
                                 Standed=True
                                 old_round=round
+                            if SplitButtonRect.collidepoint(mousepos):
+                                Deck.split_card(Cards[list(Cards.keys())[1]])
             if event.type == pygame.KEYDOWN: 
                 if event.key == pygame.K_q:
                     quit()
-                if event.key == pygame.K_s:
-                    Deck.split_card(Cards[list(Cards.keys())[1]])
             if event.type == pygame.QUIT:
                 quit()
 gameloop()
