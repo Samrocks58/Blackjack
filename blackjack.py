@@ -46,6 +46,7 @@ screen.fill(poker_green)
 GlobMoving=False
 GlobSplitting=False
 sameCard=False
+hasSplit=False
 
 def create_deck():
     func_list=[]
@@ -81,9 +82,42 @@ class deck:
     def Restart(self):
         self.cards=create_deck()
 
+def calculate_score(list):
+    Ace=False
+    NumAce=0
+    total_score=0
+    for i in list:
+        Value=list[i].card[0]
+        if Value in "23456789":
+            total_score += int(Value)
+        elif Value in "0JQK":
+            total_score += 10
+        elif Value == "A":
+            Ace=True
+            NumAce += 1
+            total_score += 11
+    if Ace:
+        for i in range(NumAce):
+            if total_score > 21:
+                total_score -= 10
+    return total_score
+
+class Hand():
+    def __init__(self):
+        self.hand={}
+        for i in range(1, 6):
+            self.hand["spot"+str(i)] = None
+        self.Value = self.score()
+    def score(self):
+        cardlist=[]
+        for i in self.hand.values():
+            if i is not None:
+                cardlist.append(i)
+        return calculate_score(cardlist)
 
 Deck=deck()
 OpponentCards={}
+Hand1=Hand()
 Cards={}
 
 class Card(Rect):
@@ -93,12 +127,12 @@ class Card(Rect):
         new_card = Deck.cards[randCardInt]
         Deck.cards.remove(new_card)
         self.card=new_card
-        # if id > 2:
-        #     self.card=new_card
-        # if id == 1:
-        #     self.card = "0H"
-        # if id == 2:
-        #     self.card = "0S"
+        if id > 2:
+            self.card=new_card
+        if id == 1:
+            self.card = "0H"
+        if id == 2:
+            self.card = "0S"
         self.starting=startingcard
         self.MoveX=0
         self.MoveY=0
@@ -107,18 +141,19 @@ class Card(Rect):
         Cards[new_card] = self
         self.image=cardPics[self.card]
         self.id=id
+        Hand1.hand["spot"+str(self.id)] = self
         self.active_pos=[7, 14]
-        self.end_pos=self.get_pos()
+        self.end_pos=self.get_pos(self.id)
         # self.center=[self.end_pos[0]+(card_width//2), self.end_pos[1]+(card_height//2)]
         # self.Rect=self.image.get_rect(center=(self.center))
         #Not useful anymore since the cards aren't being clicked on ^^^^^^^^^
-    def get_pos(self):
+    def get_pos(self, ID):
         spacing=14
-        if self.id == 1:
+        if ID == 1:
             return [max_width, max_height]
         else:
             total_spacing=card_width+spacing
-            return [max_width-total_spacing*(self.id-1), max_height]
+            return [max_width-total_spacing*(ID-1), max_height]
 
 class OpponentCard():
     def __init__(self, id, start):
@@ -153,7 +188,7 @@ msg1=""
 msg2=""
 
 def Restart():
-    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck, sameCard
+    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck, sameCard, hasSplit
     del Cards
     del OpponentCards
     OpponentCards={}
@@ -167,6 +202,7 @@ def Restart():
     Standed=False
     ended=False
     sameCard=False
+    hasSplit=False
     msg1=""
     msg2=""
     gameloop()
@@ -174,6 +210,7 @@ def Restart():
 def check_score(score):
     if score > 21:
         return True
+        
 def Game_Over():
     root=Tk()
     root.wm_withdraw()
@@ -185,25 +222,6 @@ def Game_Over():
         root.destroy()
         quit()
 
-def calculate_score(list):
-    Ace=False
-    NumAce=0
-    total_score=0
-    for i in list:
-        Value=list[i].card[0]
-        if Value in "23456789":
-            total_score += int(Value)
-        elif Value in "0JQK":
-            total_score += 10
-        elif Value == "A":
-            Ace=True
-            NumAce += 1
-            total_score += 11
-    if Ace:
-        for i in range(NumAce):
-            if total_score > 21:
-                total_score -= 10
-    return total_score
 
 def Opponent_Show():
     global OpponentCards
@@ -277,18 +295,23 @@ def end_popup(message1, message2):
         root.destroy()
         quit()
 
-def create_card():
+def create_card(NewID):
     global Deck
     if len(Deck.cards) <= 4:
         Deck.Restart()
         Deck.cards=create_deck()
-        create_card()
+        create_card(NewID)
         return True
     cardNum=len(Cards)
     if cardNum < 5:
-        Nextid=Cards[list(Cards.keys())[-1]].id + 1
-        Card(Nextid, False)
-        Deck.move_card(Cards[list(Cards.keys())[-1]])
+        if NewID == 0:
+            Nextid=Cards[list(Cards.keys())[-1]].id + 1
+            Card(Nextid, False)
+            Deck.move_card(Cards[list(Cards.keys())[-1]])
+        else:
+            Nextid=NewID
+            Card(Nextid, False)
+            Deck.move_card(Cards[list(Cards.keys())[-1]])
     elif cardNum == 5:
         root=Tk()
         root.wm_withdraw()
@@ -322,7 +345,7 @@ def find_average(list):
     return sum//len(list)
 
 def gameloop():
-    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard 
+    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard, hasSplit
     while True:
         # end_time=time.perf_counter()
         # FPSlist.append(int((end_time-start_time)**-1))
@@ -385,8 +408,6 @@ def gameloop():
                         cardpos=Cards[i].end_pos
             if Cards[i].showed:
                 screen.blit(Cards[i].image, cardpos)
-            elif Cards[i].showed == False:
-                screen.blit(Deck.image, Deck.cardpos)
 
         if ended:
             Opponent_Show()
@@ -429,7 +450,10 @@ def gameloop():
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             mousepos=pygame.mouse.get_pos()
                             if HitButtonRect.collidepoint(mousepos):
-                                create_card()
+                                if not hasSplit:
+                                    create_card(0)
+                                if hasSplit:
+                                    create_card(4)
                             if StandButtonRect.collidepoint(mousepos):
                                 Standed=True
                                 old_round=round
