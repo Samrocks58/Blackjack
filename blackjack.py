@@ -1,7 +1,5 @@
 import pygame, random, time, os
-from pygame.rect import Rect
-import tkinter as tk
-from tkinter import messagebox as mb, ttk, Tk
+from tkinter import messagebox as mb, Tk
 
 pygame.init()
 pygame.display.init()
@@ -105,48 +103,46 @@ def calculate_score(list):
 class Hand():
     def __init__(self):
         self.hand={}
-        for i in range(1, 6):
-            self.hand["spot"+str(i)] = None
         self.Value = self.score()
     def score(self):
-        cardlist=[]
-        for i in self.hand.values():
-            if i is not None:
-                cardlist.append(i)
-        return calculate_score(cardlist)
+        return calculate_score(self.hand)
+    def addCard(self, Card):
+        self.hand[Card.id] = Card
+        self.Value = self.score()
+    def removeCard(self, Card):
+        del self.hand[Card.id]
+        self.Value = self.score()
 
 Deck=deck()
 OpponentCards={}
 Hand1=Hand()
-Cards={}
+Hand2=Hand()
+ChosenHand = Hand1
+playedHands=0
 
-class Card(Rect):
+class Card(pygame.Rect):
     def __init__(self, id, startingcard):
-        global Cards, Deck
+        global Deck
         randCardInt=random.randint(0, len(Deck.cards)-1)
         new_card = Deck.cards[randCardInt]
         Deck.cards.remove(new_card)
         self.card=new_card
-        if id > 2:
-            self.card=new_card
-        if id == 1:
-            self.card = "0H"
-        if id == 2:
-            self.card = "0S"
+        # if id > 2:
+        #     self.card=new_card
+        # if id == 1:
+        #     self.card = "0H"
+        # if id == 2:
+        #     self.card = "0S"
         self.starting=startingcard
         self.MoveX=0
         self.MoveY=0
         self.moving=False
         self.showed=True
-        Cards[new_card] = self
         self.image=cardPics[self.card]
         self.id=id
-        Hand1.hand["spot"+str(self.id)] = self
         self.active_pos=[7, 14]
         self.end_pos=self.get_pos(self.id)
-        # self.center=[self.end_pos[0]+(card_width//2), self.end_pos[1]+(card_height//2)]
-        # self.Rect=self.image.get_rect(center=(self.center))
-        #Not useful anymore since the cards aren't being clicked on ^^^^^^^^^
+        ChosenHand.addCard(self)
     def get_pos(self, ID):
         spacing=14
         if ID == 1:
@@ -188,15 +184,17 @@ msg1=""
 msg2=""
 
 def Restart():
-    global gameover, GlobMoving, Cards, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck, sameCard, hasSplit
-    del Cards
+    global gameover, GlobMoving, gameoverCounter, OpponentCards, round, cardpos, old_round, Standed, msg1, msg2, ended, Deck, sameCard, hasSplit, Hand1, Hand2, ChosenHand, playedHands
     del OpponentCards
     OpponentCards={}
-    Cards={}
     cardpos=(0, 0)
     gameover=False
     GlobMoving=False
     gameoverCounter=0
+    Hand1=Hand()
+    Hand2=Hand()
+    ChosenHand=Hand1
+    playedHands=0
     round=0
     old_round=0
     Standed=False
@@ -212,15 +210,28 @@ def check_score(score):
         return True
         
 def Game_Over():
+    global ChosenHand, gameover, Standed, playedHands
     root=Tk()
     root.wm_withdraw()
-    MsgBox=mb.askyesno("You Busted!!!", "Do you want to play again?")
-    if MsgBox:
+    if not hasSplit:
+        MsgBox=mb.askyesno("You Busted!!!", "Do you want to play again?")
+        if MsgBox:
+            root.destroy()
+            Restart()
+        elif not MsgBox:
+            root.destroy()
+            quit()
+    else:
+        if ChosenHand == Hand1:
+            MsgBox = mb.showinfo("You Busted On Your First Hand!! Time To Go To The Second!!")
+            playedHands += 1
+        else:
+            MsgBox = mb.showinfo("You Busted On Your Second Hand!!")
+            playedHands += 1
+            Standed = True
         root.destroy()
-        Restart()
-    elif not MsgBox:
-        root.destroy()
-        quit()
+        gameover=False
+        ChosenHand = Hand2
 
 
 def Opponent_Show():
@@ -237,13 +248,13 @@ def Opponent_Hit():
     OpponentCard(new_id, True)
 
 def hit_or_miss():
-    global OpponentCards, Cards, msg1, msg2
+    global OpponentCards, msg1, msg2
     draw_card=False
     OpponentScore=calculate_score(OpponentCards)
-    CardScore=calculate_score(Cards)
+    CardScore=calculate_score(ChosenHand.hand)
     if check_score(CardScore):
         Game_Over()
-    if len(Cards) == 5:
+    if len(list(ChosenHand.hand.values())) == 5:
         msg1="You Won!!!"
         msg2="You Won!!! You drew five cards!! Do you want to play again?"
     if OpponentScore >= 17:
@@ -283,35 +294,32 @@ def hit_or_miss():
             msg2="You Lost!!! Do you want to play again?"
     return draw_card
 
-def end_popup(message1, message2):   
+def end_popup(message1, message2):
     root=Tk()
     root.wm_withdraw()
     MsgBox=mb.askyesno(message1, message2)
     if MsgBox:
         root.destroy()
         Restart()
-        return True
     elif not MsgBox:
         root.destroy()
         quit()
 
-def create_card(NewID):
+def create_card():
     global Deck
     if len(Deck.cards) <= 4:
         Deck.Restart()
         Deck.cards=create_deck()
-        create_card(NewID)
+        create_card()
         return True
-    cardNum=len(Cards)
+    cardNum=len(ChosenHand.hand)
     if cardNum < 5:
-        if NewID == 0:
-            Nextid=Cards[list(Cards.keys())[-1]].id + 1
-            Card(Nextid, False)
-            Deck.move_card(Cards[list(Cards.keys())[-1]])
-        else:
-            Nextid=NewID
-            Card(Nextid, False)
-            Deck.move_card(Cards[list(Cards.keys())[-1]])
+        if ChosenHand == Hand1:
+            Nextid=ChosenHand.hand[list(ChosenHand.hand.keys())[-1]].id + 1
+        elif ChosenHand == Hand2:
+            Nextid=ChosenHand.hand[list(ChosenHand.hand.keys())[-1]].id - 1
+        Card(Nextid, False)
+        Deck.move_card(ChosenHand.hand[list(ChosenHand.hand.keys())[-1]])
     elif cardNum == 5:
         root=Tk()
         root.wm_withdraw()
@@ -345,7 +353,7 @@ def find_average(list):
     return sum//len(list)
 
 def gameloop():
-    global gameover, GlobMoving, Cards, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard, hasSplit
+    global gameover, GlobMoving, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard, hasSplit, ChosenHand, Hand2, Hand1, playedHands
     while True:
         # end_time=time.perf_counter()
         # FPSlist.append(int((end_time-start_time)**-1))
@@ -360,7 +368,7 @@ def gameloop():
             Card(2, True)
         elif round == 200:
             OpponentCard(2, True)
-            if Cards[list(Cards.keys())[0]].card[0] == Cards[list(Cards.keys())[1]].card[0]:
+            if ChosenHand.hand[list(ChosenHand.hand.keys())[0]].card[0] == ChosenHand.hand[list(ChosenHand.hand.keys())[1]].card[0]:
                 sameCard=True
         if round <= 200:
             round += 1
@@ -370,22 +378,33 @@ def gameloop():
         screen.blit(Deck.image, Deck.end_pos)        
         screen.blit(HitButton, (Deck.Rect.right+5, Deck.Rect.top))
         screen.blit(StandButton, (Deck.Rect.right+5, Deck.Rect.top+75))
-        if sameCard:
+        if sameCard and not hasSplit and len(ChosenHand.hand) == 2:
             screen.blit(SplitButton, (Deck.Rect.right+5, Deck.Rect.top+150))
 
         if Standed:
-            Opponent_Show()
-            interval=75
-            if round == old_round + interval:
-                HitBool=hit_or_miss()
-                if not HitBool:
-                    Opponent_Show()
-                    OpponentCards[list(OpponentCards.keys())[0]].showed = True
-                old_round=round
-                if calculate_score(OpponentCards) >= 17:
-                    ended=True
-            if round <= 201+interval*4:
-                round += 1
+            if (not hasSplit) or (ChosenHand == Hand2) or (playedHands == 2):
+                # if gameoverCounter >= 2:
+                maxValue = max(Hand1.Value, Hand2.Value)
+                if Hand1.Value == maxValue and Hand1.Value <= 21:
+                    ChosenHand=Hand1
+                elif Hand2.Value > 21 and Hand1.Value <= 21:
+                    ChosenHand=Hand1
+                Opponent_Show()
+                interval=75
+                if round == old_round + interval:
+                    HitBool=hit_or_miss()
+                    if not HitBool:
+                        Opponent_Show()
+                        OpponentCards[list(OpponentCards.keys())[0]].showed = True
+                    old_round=round
+                    if calculate_score(OpponentCards) >= 17:
+                        ended=True
+                if round <= 201+interval*4:
+                    round += 1
+            else:
+                ChosenHand = Hand2
+                Standed=False
+                playedHands += 1
         for i in OpponentCards:
             if not OpponentCards[i].starting:
                 OpponentCardPos=OpponentCards[i].active_pos
@@ -395,19 +414,20 @@ def gameloop():
                 screen.blit(OpponentCards[i].image, OpponentCardPos)
             elif OpponentCards[i].showed == False:
                 screen.blit(OpponentCards[i].face_down_image, OpponentCardPos)
-        for i in Cards:
-            if not Cards[i].starting:
-                cardpos=Cards[i].active_pos
-            elif Cards[i].starting:
+
+        for card in list(list(ChosenHand.hand.values())):
+            if not card.starting:
+                cardpos=card.active_pos
+            elif card.starting:
                 if not GlobSplitting:
-                    cardpos=Cards[i].end_pos
+                    cardpos=card.end_pos
                 elif GlobSplitting:
-                    if Cards[i].id == 2:
-                        cardpos=Cards[i].active_pos
+                    if card.id == 2:
+                        cardpos=card.active_pos
                     else:
-                        cardpos=Cards[i].end_pos
-            if Cards[i].showed:
-                screen.blit(Cards[i].image, cardpos)
+                        cardpos=card.end_pos
+            if card.showed:
+                screen.blit(card.image, cardpos)
 
         if ended:
             Opponent_Show()
@@ -415,34 +435,39 @@ def gameloop():
                 end_popup(msg1, msg2)
         if gameover:
             gameoverCounter += 1
-            if gameoverCounter == 2:
+            if gameoverCounter % 2 == 0:
                 Game_Over()
         if GlobMoving:
-            for i in Cards:
-                if Cards[i].moving:
-                    if Cards[i].active_pos[0] >= Cards[i].end_pos[0]:
-                        Cards[i].active_pos=Cards[i].end_pos
+            for card in ChosenHand.hand.values():
+                if card.moving:
+                    if card.active_pos[0] >= card.end_pos[0]:
+                        card.active_pos=card.end_pos
                         GlobMoving=False
-                        Cards[i].moving=False
-                        gameover = check_score(calculate_score(Cards))
-                    if Cards[i].active_pos[1] >= Cards[i].end_pos[1]:
-                        Cards[i].active_pos=Cards[i].end_pos
+                        card.moving=False
+                        gameover = check_score(calculate_score(ChosenHand.hand))
+                    if card.active_pos[1] >= card.end_pos[1]:
+                        card.active_pos=card.end_pos
                         GlobMoving=False
-                        Cards[i].moving=False
-                        gameover = check_score(calculate_score(Cards))
+                        card.moving=False
+                        gameover = check_score(calculate_score(ChosenHand.hand))
                     else:
-                        Cards[i].active_pos[0] += Cards[i].MoveX
-                        Cards[i].active_pos[1] += Cards[i].MoveY
+                        card.active_pos[0] += card.MoveX
+                        card.active_pos[1] += card.MoveY
         if GlobSplitting:
-            for i in Cards:
-                if Cards[i].moving:
-                    if Cards[i].active_pos[0] <= 14:
-                        Cards[i].active_pos[0] = 14
-                        Cards[i].end_pos[0] = 14
+            for card in list(ChosenHand.hand.values()):
+                if card.moving:
+                    if card.active_pos[0] <= 14:
+                        card.active_pos[0] = 14
+                        card.end_pos[0] = 14
                         GlobSplitting=False
-                        Cards[i].moving=False
+                        card.moving=False
+                        time.sleep(0.2)
+                        Hand1.removeCard(card)
+                        card.id=5
+                        Hand2.addCard(card)
+                        break
                     else:
-                        Cards[i].active_pos[0] -= Cards[i].MoveX
+                        card.active_pos[0] -= card.MoveX
         for event in pygame.event.get():
             if not GlobMoving:
                 if round > 200:
@@ -450,18 +475,21 @@ def gameloop():
                         if event.type == pygame.MOUSEBUTTONDOWN:
                             mousepos=pygame.mouse.get_pos()
                             if HitButtonRect.collidepoint(mousepos):
-                                if not hasSplit:
-                                    create_card(0)
-                                if hasSplit:
-                                    create_card(4)
+                                create_card()
                             if StandButtonRect.collidepoint(mousepos):
                                 Standed=True
                                 old_round=round
                             if SplitButtonRect.collidepoint(mousepos):
-                                Deck.split_card(Cards[list(Cards.keys())[1]])
+                                if not hasSplit:
+                                    Deck.split_card(ChosenHand.hand[list(ChosenHand.hand.keys())[1]])
+                                    hasSplit=True
             if event.type == pygame.KEYDOWN: 
                 if event.key == pygame.K_q:
                     quit()
+                if event.key == pygame.K_r:
+                    Restart()
+                if event.key == pygame.K_i:
+                    print(f"Hand 1: {len(Hand1.hand)}\nHand2: {len(Hand2.hand)}")
             if event.type == pygame.QUIT:
                 quit()
 gameloop()
