@@ -10,6 +10,7 @@ height=int(675)
 HitButton=pygame.image.load(r"Hit Button.png")
 StandButton=pygame.image.load(r"Stand Button.png")
 SplitButton=pygame.image.load(r"splitButton.png")
+Font=pygame.font.Font(r'C:\Users\smprc\Downloads\gibster\GibsterRegular.ttf', 100)
 Button_width=HitButton.get_width()
 Button_height=HitButton.get_height()
 
@@ -78,7 +79,9 @@ class deck:
         cardObject.active_pos=cardObject.end_pos
         GlobSplitting=True
     def Restart(self):
+        global count
         self.cards=create_deck()
+        count=0
 
 def calculate_score(list):
     Ace=False
@@ -119,14 +122,21 @@ Hand1=Hand()
 Hand2=Hand()
 ChosenHand = Hand1
 playedHands=0
+count=0
+counting=False
 
 class Card(pygame.Rect):
     def __init__(self, id, startingcard):
-        global Deck
+        global Deck, count
         randCardInt=random.randint(0, len(Deck.cards)-1)
         new_card = Deck.cards[randCardInt]
         Deck.cards.remove(new_card)
         self.card=new_card
+        if self.card[0] in [str(i) for i in range(2, 7)]:
+            count += 1
+        elif self.card[0] in ["0", "J", "Q", "K", "A"]:
+            count -= 1
+
         # if id > 2:
         #     self.card=new_card
         # if id == 1:
@@ -153,6 +163,7 @@ class Card(pygame.Rect):
 
 class OpponentCard():
     def __init__(self, id, start):
+        global count
         randCard=random.randint(0, len(Deck.cards)-1)
         new_card = Deck.cards[randCard]
         Deck.cards.remove(new_card)
@@ -167,6 +178,11 @@ class OpponentCard():
             self.showed = False
         else:
             self.showed=True
+        if self.showed:
+            if self.card[0] in [str(i) for i in range(2, 7)]:
+                count += 1
+            elif self.card[0] in ["0", "J", "Q", "K", "A"]:
+                count -= 1
         OpponentCards[new_card] = self
         self.id=id
         self.active_pos=[7, 14]
@@ -203,6 +219,7 @@ def Restart():
     hasSplit=False
     msg1=""
     msg2=""
+    Deck=deck()
     gameloop()
 
 def check_score(score):
@@ -235,8 +252,13 @@ def Game_Over():
 
 
 def Opponent_Show():
-    global OpponentCards
+    global OpponentCards, count
     for card in OpponentCards:
+        if OpponentCards[card].showed == False:
+            if OpponentCards[card].card[0] in [str(i) for i in range(2, 7)]:
+                count += 1
+            elif OpponentCards[card].card[0] in ["0", "J", "Q", "K", "A"]:
+                count -= 1
         if OpponentCards[card].id == 1:
             OpponentCards[card].showed = True
     
@@ -306,10 +328,11 @@ def end_popup(message1, message2):
         quit()
 
 def create_card():
-    global Deck
+    global Deck, count
     if len(Deck.cards) <= 4:
         Deck.Restart()
         Deck.cards=create_deck()
+        # count=0
         create_card()
         return True
     cardNum=len(ChosenHand.hand)
@@ -353,7 +376,7 @@ def find_average(list):
     return sum//len(list)
 
 def gameloop():
-    global gameover, GlobMoving, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard, hasSplit, ChosenHand, Hand2, Hand1, playedHands
+    global gameover, GlobMoving, gameoverCounter, HitButton, StandButton, OpponentCards, round, Card, OpponentCard, Standed, old_round, msg1, msg2, ended, GlobSplitting, sameCard, hasSplit, ChosenHand, Hand2, Hand1, playedHands, counting, count
     while True:
         # end_time=time.perf_counter()
         # FPSlist.append(int((end_time-start_time)**-1))
@@ -380,6 +403,9 @@ def gameloop():
         screen.blit(StandButton, (Deck.Rect.right+5, Deck.Rect.top+75))
         if sameCard and not hasSplit and len(ChosenHand.hand) == 2:
             screen.blit(SplitButton, (Deck.Rect.right+5, Deck.Rect.top+150))
+        countTxt = Font.render(str(count), False, (0, 0, 0))
+        if counting:
+            screen.blit(countTxt, (0, 0))
 
         if Standed:
             if (not hasSplit) or (ChosenHand == Hand2) or (playedHands == 2):
@@ -480,7 +506,7 @@ def gameloop():
                                 Standed=True
                                 old_round=round
                             if SplitButtonRect.collidepoint(mousepos):
-                                if not hasSplit:
+                                if sameCard and not hasSplit and len(ChosenHand.hand) == 2:
                                     Deck.split_card(ChosenHand.hand[list(ChosenHand.hand.keys())[1]])
                                     hasSplit=True
             if event.type == pygame.KEYDOWN: 
@@ -488,6 +514,8 @@ def gameloop():
                     quit()
                 if event.key == pygame.K_r:
                     Restart()
+                if event.key == pygame.K_c:
+                    counting = not counting
                 if event.key == pygame.K_i:
                     print(f"Hand 1: {len(Hand1.hand)}\nHand2: {len(Hand2.hand)}")
             if event.type == pygame.QUIT:
